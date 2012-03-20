@@ -1,0 +1,35 @@
+
+<input type="file" id="fileinput" />
+<script type="text/javascript">
+  var mem = new Array();
+  function readFile(evt) {
+    var f = evt.target.files[0];
+	 var hexMap = {"0":"0000", "1":"0001", "2":"0010", "3":"0011", "4":"0100", "5":"0101", "6":"0110", "7":"0111", "8":"1000", "9":"1001", "A":"1010", "B":"1011", "C":"1100", "D":"1101", "E":"1110", "F":"1111"};
+    if (f) {
+      var r = new FileReader();
+      r.readAsText(f);
+      r.onload = function(e) {
+      	var j=0;
+	      var contents = e.target.result;
+	      s=contents.split('\n');
+			for( var i=0; i<s.length-1; i++){
+			var first = hexMap[ s[i].charAt(0) ];
+			var second = hexMap [ s[i].charAt(1) ];
+			var third = hexMap [ s[i].charAt(2) ];
+			var fourth = hexMap [ s[i].charAt(3) ];
+			mem[j] = first + second;
+			mem[++j] = third + fourth;
+			j++;
+			}
+         for( var i=0;i<mem.length;i++){
+			console.log(mem[i]);
+			}
+      }
+
+    } else {
+      alert("Failed to load file");
+    }
+  }
+
+  document.getElementById('fileinput').addEventListener('change', readFile, false);
+</script>
