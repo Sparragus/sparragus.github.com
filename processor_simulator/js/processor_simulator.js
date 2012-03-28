@@ -317,18 +317,18 @@ var RISC_AR4 = function () {
         this._r.acc = -this._r.acc;
         // TODO: Deal with flags
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
+        //this._setFlag("C", 0);
         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
-        this._setFlag("O", 0);
+        //this._setFlag("O", 0);
       },
 
       NOT: function () {
         this._r.acc = ~this._r.acc;
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
+        //this._setFlag("C", 0);
         this._setFlag("N", (this._r.acc & 0x80) >>> 7);
-        this._setFlag("O", 0);
+        //this._setFlag("O", 0);
       },
 
       RLC: function () {
@@ -338,7 +338,7 @@ var RISC_AR4 = function () {
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("C", carry);
         this._setFlag("N", (this._r.acc & 0x80) >>> 7);
-        this._setFlag("O", 0);
+        //this._setFlag("O", 0);
       },
 
       RRC: function () {
@@ -348,16 +348,16 @@ var RISC_AR4 = function () {
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("C", carry);
         this._setFlag("N", (this._r.acc & 0x80) >>> 7);
-        this._setFlag("O", 0);
+        //this._setFlag("O", 0);
       },
 
       LDA: function (src) {
         this._r.acc = src;
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
+        //this._setFlag("C", 0);
         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
-        this._setFlag("O", 0);
+        //this._setFlag("O", 0);
       },
 
       STA: function (src) {
@@ -370,9 +370,7 @@ var RISC_AR4 = function () {
         this._r.acc = MEM.readb(src); // src == address
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
-        this._setFlag("O", 0);
 	  }
 		//trigerear keyboard event.
 		else{
@@ -394,9 +392,7 @@ var RISC_AR4 = function () {
         this._r.acc = src;
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
-        this._setFlag("O", 0);
       },
 
       BRZ: function () {
