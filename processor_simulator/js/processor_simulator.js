@@ -66,13 +66,13 @@ var RISC_AR4 = function () {
     // Write 16-bit word to a given address
     write: function(addr, val) {
       this.writeb(addr, val >>> 8);
-      this.writeb(addr+1, val);
+      this.writeb(addr+1, (0xF & val));
     },
 
     reset: function() {
       this._memory = [];
 
-      for (var i = 0; i <= this._size; i++) {
+      for (var i = 0; i < this._size; i++) {
         this._memory[i] = 0;
       }
     },
@@ -90,6 +90,12 @@ var RISC_AR4 = function () {
     _regMap: {"000":"r0", "001":"r1", "010":"r2", "011":"r3", "100":"r4", "101":"r5", "110":"r6", "111":"r7"},
     // Flag bit masks
     _f: {Z:8, C:4, N:2, O:1},
+	//CPU status flags
+	_status: {stop : 0, idle : 0},
+	//delegate to input or output devices
+	_delegate: function(type, data){
+		$("#device_driver").trigger(type, data);
+	},
 
     _setFlag: function(flag, value) {
       this._r.sr = (value ? (this._r.sr | this._f[flag]) : (this._r.sr & ~(this._f[flag])));
@@ -123,11 +129,17 @@ var RISC_AR4 = function () {
       }
 
       //---- Direct addressing mode
-      else if (op === "LDAda" || op === "STAda") {
+      else if (op === "LDAda") {
+        // Get address from instruction...
+        var src = parseInt(getBinaryString(instruction, 7, 0), 2);
+
+        args.push(src);
+      }
+       else if (op === "STAda") {
         // Get address from instruction...
         var address = parseInt(getBinaryString(instruction, 7, 0), 2),
         // ...and fetch value from memory.
-        src = MEM.read(address);
+        src = address;
 
         args.push(src);
       }
@@ -143,6 +155,7 @@ var RISC_AR4 = function () {
       else if (op === "STA") {
         var register = getBinaryString(instruction, 10, 8);
         var src = this._regMap[register];
+        args.push(src);
       }
 
       return {op:op, args:args};
@@ -150,71 +163,156 @@ var RISC_AR4 = function () {
     },
 
     _execute: {
+     
       AND: function (src) {
         this._r.acc = this._r.acc & src;
+
+        var overflow = 0;
+
         // TODO: Deal with flags
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
+        //this._setFlag("C", (this._r.acc & 0x100)>>>8);
         this._setFlag("N", this._r.acc & 0x80 >>> 7);
-        this._setFlag("O", 0);
+        //this._setFlag("O", overflow);
 	  },
 
       OR: function (src) {
         this._r.acc = this._r.acc | src;
+
+        var overflow = 0;
+
         // TODO: Deal with flags
+        this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
+       // this._setFlag("C", (this._r.acc & 0x100)>>>8);
+        this._setFlag("N", this._r.acc & 0x80 >>> 7);
+        //this._setFlag("O", overflow);
+
       },
 
       XOR: function (src) {
         this._r.acc = this._r.acc ^ src;
+        var overflow = 0;
+
+
         // TODO: Deal with flags
+        this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
+       // this._setFlag("C", (this._r.acc & 0x100)>>>8);
+        this._setFlag("N", this._r.acc & 0x80 >>> 7);
+        //this._setFlag("O", overflow);
+
       },
 
       ADDC: function (src) {
-        this._r.acc = this._r.acc + src;
+        var accsign = (this._r.acc & 0x80)>>>7;
+        this._r.acc = this._r.acc + src + this._getFlag("C");
 
-        // Manage overflow
-        var overflow = 0;
+                  
+        //Manage Overflow
+        var overflow = !(accsign ^ ((src & 0x80)>>>7));
+        if(overflow == 1)
+        {
+          if(accsign === (this._r.acc & 0x80)>>>7)
+          {
+            overflow = 0;
+          }
+
+        }
+
+
+        // TODO: Deal with flags
+        this._setFlag("Z", (this._r.acc & 0xFF) === 0 ? 1 : 0);
+        this._setFlag("C", (this._r.acc & 0x100)>>>8);
+        this._setFlag("O", overflow);
+
         if (this._r.acc > 127) {
           this._r.acc -= 256;
-          overflow = 1;
         }
         else if (this._r.acc < -128) {
           this._r.acc += 256;
-          overflow = 1;
         }
+         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
 
-        // TODO: Deal with flags
-        this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
-        this._setFlag("N", this._r.acc < 0 ? 1 : 0);
-        this._setFlag("O", overflow);
+
       },
 
       SUB: function (src) {
+        var accsign = (this._r.acc & 0x80)>>>7;
         this._r.acc = this._r.acc - src;
 
-        // Manage overflow
-        var overflow = 0;
+        
+        //Manage Overflow
+        var overflow = !(accsign ^ ((src & 0x80)>>>7));
+        if(overflow == 1)
+        {
+          if(accsign === (this._r.acc & 0x80)>>>7)
+          {
+            overflow = 0;
+          }
+
+        }
+
+        // TODO: Deal with flags
+        this._setFlag("Z", (this._r.acc & 0xFF) === 0 ? 1 : 0);
+        this._setFlag("C", (this._r.acc & 0x100)>>>8);
+        this._setFlag("O", overflow);
+
         if (this._r.acc > 127) {
           this._r.acc -= 256;
-          overflow = 1;
         }
         else if (this._r.acc < -128) {
           this._r.acc += 256;
-          overflow = 1;
         }
 
-        // TODO: Deal with flags
-        this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
-        this._setFlag("C", 0);
-        this._setFlag("N", this._r.acc < 0 ? 1 : 0);
-        this._setFlag("O", overflow);
+         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
+
+
       },
 
       MAC: function (src) {
-        // TODO: Deal with flags
-      },
+            var accsign = (this._r.acc & 0x80)>>>7;
+            var fLSBacc = this._r.acc & 0xF;
+            var fLSBsrc = src & 0xF;
 
+            this._r.acc = (fLSBacc*fLSBsrc) + fLSBsrc; 
+            //console.log("The MAC result is: "+ this._r.acc);
+                   
+        //Manage Overflow
+        var overflow = !(accsign ^ ((src & 0x80)>>>7));
+        //console.log("overflow is: " + overflow);
+        //console.log("Accsign is: " + accsign);
+        var debug = (this._r.acc & 0x80)>>>7;
+        //console.log("New Accsign is: "+ debug);
+        //console.log("Signs are the same: "+ overflow);
+        if(overflow == 1)
+        {
+          //console.log("Accsign is: " + accsign);
+          //console.log("Debug is: " + debug);
+          //console.log("The logic is: " + (accsign === debug));
+          if(accsign === debug)
+          {
+            overflow = 0;
+            //console.log("CHANGED OVERFLOW TO 0");
+          }
+
+        }
+
+        // TODO: Deal with flags
+        this._setFlag("Z", (this._r.acc & 0xFF) === 0 ? 1 : 0);
+        this._setFlag("C", (this._r.acc & 0x100)>>>8);
+        this._setFlag("O", overflow);
+
+        if (this._r.acc > 127) {
+          this._r.acc -= 256;
+        }
+        else if (this._r.acc < -128) {
+          this._r.acc += 256;
+        }
+
+        this._setFlag("N", this._r.acc < 0 ? 1 : 0);
+
+
+      },
+ 
       NEG: function () {
         this._r.acc = -this._r.acc;
         // TODO: Deal with flags
@@ -229,7 +327,7 @@ var RISC_AR4 = function () {
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("C", 0);
-        this._setFlag("N", this._r.acc & 0x80 >>> 7);
+        this._setFlag("N", (this._r.acc & 0x80) >>> 7);
         this._setFlag("O", 0);
       },
 
@@ -239,7 +337,7 @@ var RISC_AR4 = function () {
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("C", carry);
-        this._setFlag("N", this._r.acc & 0x80 >>> 7);
+        this._setFlag("N", (this._r.acc & 0x80) >>> 7);
         this._setFlag("O", 0);
       },
 
@@ -249,7 +347,7 @@ var RISC_AR4 = function () {
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("C", carry);
-        this._setFlag("N", this._r.acc & 0x80 >>> 7);
+        this._setFlag("N", (this._r.acc & 0x80) >>> 7);
         this._setFlag("O", 0);
       },
 
@@ -267,7 +365,33 @@ var RISC_AR4 = function () {
       },
 
       LDAda: function (src) {
+	  //Si no lee del keyboard, entonces lodea dato de la memoria
+	  if(!(src === 250 || src === 251)){
         this._r.acc = MEM.readb(src); // src == address
+
+        this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
+        this._setFlag("C", 0);
+        this._setFlag("N", this._r.acc < 0 ? 1 : 0);
+        this._setFlag("O", 0);
+	  }
+		//trigerear keyboard event.
+		else{
+			this._delegate("in", {cpu: this, mem: MEM, memPos: src});
+		}
+      },
+
+      STAda: function (src) {
+        MEM.writeb(src, this._r.acc); // src == address
+
+		//trigerear display event.
+		if(src >= 252 && src <= 255){
+			this._delegate("out", {mem : MEM, memPos : src});
+		}
+      },
+
+      LDI: function (src) {
+        // TODO: Deal with flags
+        this._r.acc = src;
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("C", 0);
@@ -275,32 +399,37 @@ var RISC_AR4 = function () {
         this._setFlag("O", 0);
       },
 
-      STAda: function (src) {
-        MEM.writeb(src, this._r.acc); // src == address
-      },
-
-      LDI: function (src) {
-        // TODO: Deal with flags
-      },
-
       BRZ: function () {
         // TODO: Deal with flags
+		if(this._getFlag("Z")){
+			this._r.pc = this._r.r7;
+		}
       },
 
       BRC: function () {
         // TODO: Deal with flags
+		if(this._getFlag("C")){
+			this._r.pc = this._r.r7;
+		}
       },
 
       BRN: function () {
         // TODO: Deal with flags
+		if(this._getFlag("N")){
+			this._r.pc = this._r.r7;
+		}
       },
 
       BRO: function () {
         // TODO: Deal with flags
+		if(this._getFlag("O")){
+			this._r.pc = this._r.r7;
+		}
       },
 
       STOP: function () {
         // TODO: Deal with flags
+		this._status.stop = 1;
       },
 
       NOP: function () {
@@ -337,59 +466,28 @@ var RISC_AR4 = function () {
 
     stop: function() {
       // Stop the machine
+	  this._status.stop = 1;
     },
 
     performCycle: function() {
-      var instruction = MEM.read(this._r.pc);
-      var decodedInstruction = this._decode(instruction); // {op:opCode, args:args}
-      this._r.pc += 2;
+		if(!(this._status.stop || this._status.idle)){
+		  var instruction = MEM.read(this._r.pc);
+		  this._r.ir = instruction;
+		  var decodedInstruction = this._decode(instruction); // {op:opCode, args:args}
+		  this._r.pc += 2;
 
-      console.log("Performing CYCLE");
-      if (decodedInstruction.op !== null && decodedInstruction.args !== null) {
-        this._execute[decodedInstruction.op].apply(this, decodedInstruction.args);
-      }
-      else {
-        this.stop();
-        throw new Error("undefined operation code or wrongly defined arguments");
-      }
-    }
+		  console.log("Performing CYCLE");
+		  if (decodedInstruction.op !== null && decodedInstruction.args !== null) {
+			this._execute[decodedInstruction.op].apply(this, decodedInstruction.args);
+		  }
+		  else {
+			this.stop();
+			throw new Error("undefined operation code or wrongly defined arguments");
+		  }
+		}
+	}
   };
 
   return {MEM : MEM, CPU : CPU};
 };
 
-(function(){
-  var arch = RISC_AR4();
-
-  //---- Load program
-  // TODO: Load program func
-  // Address: 0x00 Instruction: SUB r0
-  arch.MEM.write(0x00, 0x2000);
-  arch.CPU._r["r0"]  = parseInt('01111111', 2) // r0 = 127
-  arch.CPU._r["acc"] = parseInt('01011011', 2) // acc = 91
-
-
-  // TODO: Why are both arch.CPU._r equal???? PC = 2 in both!?
-  // http://stackoverflow.com/questions/4057440/is-chromes-javascript-console-lazy-about-evaluating-arrays
-
-  console.log("==================================");
-  console.log("Cycle started");
-  console.log("");
-  console.log("Old Status:");
-
-  console.log(arch.CPU._r);
-
-  console.log("");
-
-  setTimeout(function(){
-    arch.CPU.performCycle();
-
-    console.log("");
-    console.log("New Status:");
-
-    console.log(arch.CPU._r);
-
-  console.log("==================================");
-    }, 1000);
-
-})();
