@@ -77,13 +77,65 @@
         else{
         $('div#register_0 pre').text(extendZeroes(computer.CPU._r['r0'].toString(2),8));
         }
+        if(computer.CPU._r['r1']<0){
+          $('div#register_1 pre').text(extendZeroes((computer.CPU._r['r1']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_1 pre').text(extendZeroes(computer.CPU._r['r1'].toString(2),8));
+        }
+        if(computer.CPU._r['r2']<0){
+          $('div#register_2 pre').text(extendZeroes((computer.CPU._r['r2']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_2 pre').text(extendZeroes(computer.CPU._r['r2'].toString(2),8));
+        }
+        if(computer.CPU._r['r3']<0){
+          $('div#register_3 pre').text(extendZeroes((computer.CPU._r['r3']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_3 pre').text(extendZeroes(computer.CPU._r['r3'].toString(2),8));
+        }if(computer.CPU._r['r4']<0){
+          $('div#register_4 pre').text(extendZeroes((computer.CPU._r['r4']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_4 pre').text(extendZeroes(computer.CPU._r['r4'].toString(2),8));
+        }if(computer.CPU._r['r4']<0){
+          $('div#register_4 pre').text(extendZeroes((computer.CPU._r['r4']+256).toString(2),8));
+
+        }
+        else{
+        $('div#register_4 pre').text(extendZeroes(computer.CPU._r['r4'].toString(2),8));
+        }if(computer.CPU._r['r5']<0){
+          $('div#register_5 pre').text(extendZeroes((computer.CPU._r['r5']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_5 pre').text(extendZeroes(computer.CPU._r['r5'].toString(2),8));
+        }if(computer.CPU._r['r6']<0){
+          $('div#register_6 pre').text(extendZeroes((computer.CPU._r['r6']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_6 pre').text(extendZeroes(computer.CPU._r['r6'].toString(2),8));
+        }
+        if(computer.CPU._r['r7']<0){
+          $('div#register_7 pre').text(extendZeroes((computer.CPU._r['r7']+256).toString(2),8));
+
+        }
+        else{
         $('div#register_7 pre').text(extendZeroes(computer.CPU._r['r7'].toString(2),8));
+        }
+        //$('div#register_1 pre').text(extendZeroes(computer.CPU._r['r1'].toString(2),8));
+        //$('div#register_2 pre').text(extendZeroes(computer.CPU._r['r2'].toString(2),8));
+        //$('div#register_3 pre').text(extendZeroes(computer.CPU._r['r3'].toString(2),8));
+        //$('div#register_4 pre').text(extendZeroes(computer.CPU._r['r4'].toString(2),8));
+        //$('div#register_5 pre').text(extendZeroes(computer.CPU._r['r5'].toString(2),8));
+        //$('div#register_6 pre').text(extendZeroes(computer.CPU._r['r6'].toString(2),8));
+        //$('div#register_7 pre').text(extendZeroes(computer.CPU._r['r7'].toString(2),8));
     };
 
     var startCPU = function(program) {
@@ -181,7 +233,7 @@
 	$(document).ready(function(){
 		$("#device_driver").on("out", function(e, data){
 			//replace one
-			var stringPos = data.mempos-252;
+			var stringPos = data.memPos-252;
 			var displayPre = $(this).find("#display pre");
 			var displayText = displayPre.text();
 			var asciiFromMem = String.fromCharCode(data.mem.readb(data.memPos));
