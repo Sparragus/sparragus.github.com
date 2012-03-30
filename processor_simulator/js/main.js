@@ -39,8 +39,19 @@
         var htmlStr;
         var tbody = $('table#memory-table tbody');
         tbody.empty();
+        
+        var pad  = function (number, length) {
+	   var str = '' + number;
+	   while (str.length < length) {
+	   	str = '0' + str;
+	   }
+   
+	   return str;
+
+	};
+
         arch.MEM._memory.forEach( function (element, index, array) {
-            htmlStr = "<tr><td>" + index.toString(16).toUpperCase() + "</td><td>" + element.toString(16).toUpperCase()+"</td></tr>";
+            htmlStr = "<tr><td>" + pad(index.toString(16).toUpperCase(), 2) + "</td><td>" + pad(element.toString(16).toUpperCase(), 2) +"</td></tr>";
             tbody.append(htmlStr);
         });
     };
