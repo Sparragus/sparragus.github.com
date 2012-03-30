@@ -203,6 +203,15 @@ var RISC_AR4 = function () {
       },
 
       ADDC: function (src) {
+        if(this._r.acc < 0)
+        {
+            this._r.acc += 256;
+            this._r.acc = (this._r.acc & 0xFF);
+        }
+        if(src<0)
+        {
+            src = (src + 256) & 0xFF;
+        }
         var accsign = (this._r.acc & 0x80)>>>7;
         this._r.acc = this._r.acc + src + this._getFlag("C");
 
@@ -236,8 +245,18 @@ var RISC_AR4 = function () {
       },
 
       SUB: function (src) {
+        if(this._r.acc < 0)
+        {
+            this._r.acc += 256;
+            this._r.acc = (this._r.acc & 0xFF);
+        }
         var accsign = (this._r.acc & 0x80)>>>7;
-        this._r.acc = this._r.acc - src;
+        src = -src;
+        if(src<0)
+        {
+            src = (src+256) & 0xFF;
+        }
+        this._r.acc = this._r.acc + src;
 
         
         //Manage Overflow
@@ -389,7 +408,14 @@ var RISC_AR4 = function () {
 
       LDI: function (src) {
         // TODO: Deal with flags
-        this._r.acc = src;
+		this._r.acc = src;
+		
+		if (this._r.acc > 127) {
+          this._r.acc -= 256;
+        }
+        else if (this._r.acc < -128) {
+          this._r.acc += 256;
+        }
 
         this._setFlag("Z", this._r.acc === 0 ? 1 : 0);
         this._setFlag("N", this._r.acc < 0 ? 1 : 0);
@@ -486,4 +512,3 @@ var RISC_AR4 = function () {
 
   return {MEM : MEM, CPU : CPU};
 };
-
